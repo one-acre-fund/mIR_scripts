@@ -1,3 +1,5 @@
+
+aggregate_soil <- function(){
 ###This will read in OPUS files and output a single CSV with spectra and file name per row
 #last checked 7mar17 by MB
 library(soil.spec)
@@ -14,19 +16,7 @@ print(paste("Directory chosen", pth))
 #grab files names from path
 lst <- as.list(list.files(path=pth, pattern="*.0$", full.names=TRUE))
 shortlst <- as.list(list.files(path=pth, pattern="*.0$", full.names=FALSE))
-
-#troubleshoot 1
-#lst <- lst[1:20]
-
-
-
-# spec1 <- read.opus(lst,speclib = "ICRAF")@data@ab
-# spec2 <- read.opus(lst,speclib = "ICRAF")@data@ab
-# spec3 <- read.opus(lst,speclib = "ICRAF")@data@ab
-# spec4 <- read.opus(lst,speclib = "ICRAF")@data@ab
-# spec5 <- read.opus(lst,speclib = "ICRAF")@data@ab
-# 
-# 
+length(lst)
 
 #lifted from R. On code ###############################
 spec <- read.opus(lst,speclib = "ICRAF")@data@ab
@@ -100,5 +90,5 @@ set.seed(10101)
 ran.df <- do.call("rbind", lapply(sample(shortlst, size=length(shortlst)/10, replace=FALSE ), as.data.frame)) 
 colnames(ran.df) <- "Sample ID"
 write.csv(ran.df,file=randnam, row.names = TRUE)
-
+}
 
