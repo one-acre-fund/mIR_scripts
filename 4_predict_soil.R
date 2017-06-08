@@ -105,7 +105,7 @@ for(i in colnames(ref)[2:length(colnames(ref))]){
 #test we have matches
 
 if( sum(!is.na(match(raw$SSN, ref$SSN)))  < dim(ref)[1]*0.9   ){
-  print("Found too few matches, something might be wrong, stopping run")
+  print("Found too few matches, something might be wrong, stopping run v2")
   stop()
 }
 
