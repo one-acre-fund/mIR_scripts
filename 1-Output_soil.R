@@ -6,7 +6,7 @@ library(soil.spec)
 library(reshape)
 memory.limit(size=12000)
 
-
+gwd <- getwd()
 #get the working directory for path
 
 pth <- choose.dir(default=getwd(), caption="Select folder with OPUS raw data")
@@ -90,5 +90,7 @@ set.seed(10101)
 ran.df <- do.call("rbind", lapply(sample(shortlst, size=length(shortlst)/10, replace=FALSE ), as.data.frame)) 
 colnames(ran.df) <- "Sample ID"
 write.csv(ran.df,file=randnam, row.names = TRUE)
+
+setwd(gwd)
 }
 
