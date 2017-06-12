@@ -4,7 +4,6 @@ predict_properties <- function(){
 library(soil.spec)
 
 #start by setting WD to here
-setwd("D:/OneAcre/Google Drive/One Acre Fund/OAF Soil Lab Folder/Projects/Sample_scripts")
 wd <- getwd()
 outwd <- choose.dir(default="D:/OneAcre/Google Drive/One Acre Fund/OAF Soil Lab Folder/Projects",caption="please choose project directory")
 
