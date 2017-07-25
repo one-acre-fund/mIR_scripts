@@ -26,7 +26,6 @@ for(i in lst){
 }
 
 
-stop()
 spec <- read.opus(lst, print.progress = TRUE, speclib = "ICRAF")@data@ab
 print("1")
 
