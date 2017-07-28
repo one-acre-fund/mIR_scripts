@@ -16,10 +16,17 @@ print(paste("Directory chosen", pth))
 #grab files names from path
 lst <- as.list(list.files(path=pth, pattern="*.0$", full.names=TRUE))
 shortlst <- as.list(list.files(path=pth, pattern="*.0$", full.names=FALSE))
-length(lst)
 
 #lifted from R. On code ###############################
-spec <- read.opus(lst,speclib = "ICRAF")@data@ab
+print("check files")
+for(i in lst){
+  print(paste("check integrity file...", i))
+  read.opus(i, print.progress = TRUE, speclib = "ICRAF")@data@ab
+  print("... PASSED")
+}
+
+
+spec <- read.opus(lst, print.progress = TRUE, speclib = "ICRAF")@data@ab
 print("1")
 
 spectraDf<-spec
