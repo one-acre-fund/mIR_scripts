@@ -4,14 +4,15 @@ aggregate_soil <- function(){
 #last checked 7mar17 by MB
 library(soil.spec)
 library(reshape)
-memory.limit(size=12000)
+library(tcltk)
+#memory.limit(size=12000)
 
 gwd <- getwd()
 #get the working directory for path
 
-pth <- choose.dir(default=getwd(), caption="Select folder with OPUS raw data")
+#pth <- choose.dir(default=getwd(), caption="Select folder with OPUS raw data")
+pth <- tk_choose.dir(default=getwd(), caption="Select folder with OPUS raw data")
 print(paste("Directory chosen", pth))
-
 
 #grab files names from path
 lst <- as.list(list.files(path=pth, pattern="*.0$", full.names=TRUE))
@@ -37,6 +38,7 @@ names(tmpSpec) <- gsub("^(2349\\.6)\\.", "\\1",
                             colnames(tmpSpec)))
 #fix again for non-deriv spectra
 print("3")
+graphics.off(); par("mar"); par(mar=c(1,1,1,1));
 tmpDer <- soil.spec::trans(tmpSpec, tr="derivative", plot.spectrogram=T)
 spectraDfDer <- as.data.frame(tmpDer$trans)
 rawspec <- as.data.frame(tmpDer$raw)
