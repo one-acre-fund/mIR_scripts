@@ -23,7 +23,6 @@ predict_properties <- function(numberOfRuns){
   
   # Begin by sourcing the scripts
   source('PLS.R')
-  source('RF_PLS_optimal.R')
   source('SVM.R')
   source("XGBM.R")
   source("misc.R")
