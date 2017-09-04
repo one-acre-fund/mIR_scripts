@@ -72,7 +72,7 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
     #merge with first derivative preprocessed spectra
     colnames(ref)[1] <- "SSN"
     ref.mir <- merge(ref, der1.ssn, by.x = "SSN", by.y = "SSN")
-    write_csv(ref.mir, "ref.mir.csv")
+    #write_csv(ref.mir, "ref.mir.csv")
     rc <- colnames(ref)
     
     #which columns contains reference data?
@@ -83,19 +83,13 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
     spectra <- ref.mir[, mirp]
     
     #Create two new subfolders within the current working using:
-    b<-getwd()
+    b <- getwd()
     
     if(!file.exists("Models")){dir.create("Models")}
     if(!file.exists("calibration_plots")){dir.create("calibration_plots")}
     
     # Fit calibration models for the training set and
     # use the testing set to validate the models
-    
-    # newm <- 0.35
-    # #set.seed(sample(1:1000,1))
-    # testing <- round(runif(round(length(ref.mir$SSN)*newm), min=0, max=length(ref.mir$SSN)))
-    # testing <- unique(testing)
-    # print(paste("data points in testing are ", length(testing)))
     
     msummary <- NULL
     hd <- colnames(ref)[-1]
@@ -146,7 +140,7 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
       model.summary <- c(hd[q], RSQ, RSQ.eval)
       msummary <- rbind(msummary, model.summary)
       
-      saveRDS(xgb.fit, file = paste0(b,"/","Models/", hd[q], ".rds"))
+      #saveRDS(xgb.fit, file = paste0(b,"/","Models/", hd[q], ".rds"))
       predi <- round(predict(xgb.fit, trainX), 2)
       pm <- as.data.frame(cbind(trainY, predi))
       colnames(pm) <- c("measured","predicted")
@@ -195,8 +189,8 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
       p2 <- p2 + xlim(range(pmp)) + ylim(range(pmp))
       
       # Save calibration and validation plots
-      png(file = paste0(b,"/calibration_plots/",hd[q],".png"), height = 400, width = 800)
-      grid.arrange(p,p2,nrow = 1)
+      png(file = paste0(b,"/calibration_plots/", hd[q],".png"), height = 400, width = 800)
+      grid.arrange(p, p2, nrow = 1)
       
       dev.off()
       gc()
@@ -247,7 +241,7 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
                      print_every_n = 10,  early_stopping_rounds = 10, 
                      maximize = TRUE, verbose = 1)
       
-      saveRDS(xgb.fit, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
+      #saveRDS(xgb.fit, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
       
       best_iter <- xgb.fit$best_iteration
       train_log <- xgb.fit$evaluation_log

@@ -85,14 +85,6 @@ SVM <- function(wd,infrared.data, reference.data, testing, method = c("PLSM","SV
     if(!file.exists("Models")){dir.create("Models")}
     if(!file.exists("calibration_plots")){dir.create("calibration_plots")}
     
-    # Fit calibration models for the training set and
-    # use the testing set to validate the models
-    #testing <- which(ref.mir$SSN%in%hout$SSN)
-    # newm <- 0.35
-    # testing <- round(runif(round(length(ref.mir$SSN)*newm), min=0, max=length(ref.mir$SSN)))
-    # testing <- unique(testing)
-    # print(paste("data points in testing are ", length(testing)))
-    
     msummary <- NULL
     hd <- colnames(ref)[-1]
     print("training calibration models")
@@ -153,7 +145,7 @@ SVM <- function(wd,infrared.data, reference.data, testing, method = c("PLSM","SV
       model.summary <- c(hd[q], cost, training.parameters, testing.parameters)
       msummary <- rbind(msummary, model.summary)
       
-      saveRDS(rf.m, file = paste0(b,"/","Models/", hd[q], ".rds"))
+      #saveRDS(rf.m, file = paste0(b,"/","Models/", hd[q], ".rds"))
       
       pm <- as.data.frame(cbind(y, predi))
       colnames(pm) <- c("measured","predicted")
@@ -207,9 +199,9 @@ SVM <- function(wd,infrared.data, reference.data, testing, method = c("PLSM","SV
       p2 <- p2 + xlim(range(pmp)) + ylim(range(pmp))
       
       # Save calibration and validation plots
-      png(file = paste0(b,"/calibration_plots/",hd[q],".png"), 
-          height = 400,width = 800)
-      grid.arrange(p,p2,nrow = 1)
+      png(file = paste0(b,"/calibration_plots/", hd[q],".png"), 
+          height = 400, width = 800)
+      grid.arrange(p, p2,nrow = 1)
       dev.off()
       gc()
     }
@@ -273,7 +265,7 @@ SVM <- function(wd,infrared.data, reference.data, testing, method = c("PLSM","SV
                     tuneGrid = expand.grid(cost = cost),
                     metric = "RMSE", scale = F)
       
-      saveRDS(rf.m, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
+      #saveRDS(rf.m, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
       
       predi <- exp(predict(rf.m, rf.m$trainingData))
       y <- exp(cal[, 1])
@@ -284,8 +276,6 @@ SVM <- function(wd,infrared.data, reference.data, testing, method = c("PLSM","SV
       RSQ <- round(as.numeric(training.parameters[4]),2)
       RMSE <- round(as.numeric(training.parameters[3]),2)
       msummary <- rbind(msummary, training.parameters)
-      #print("line 479")
-      #Training
       
       pm <- as.data.frame(cbind(y, predi))
       colnames(pm) <-c ("measured","predicted")

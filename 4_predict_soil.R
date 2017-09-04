@@ -1,4 +1,4 @@
-predict_properties <- function(numberOfRuns){
+predict_properties <- function(numberOfRuns, ENS=FALSE, IND=TRUE){
   
   start.time <- proc.time()
   
@@ -13,19 +13,15 @@ predict_properties <- function(numberOfRuns){
   
   #ref_path <- paste(outwd,"3_wet_chem/wet_chem.csv",sep="/")
   
-  ref_path <- tk_choose.files(default=paste(outwd,"/3_wet_chem/wet_chem.csv",sep="")
+  ref_path <- tk_choose.files(default=paste(outwd,"/wet_chem/wet_chem.csv",sep="")
                               , caption="Please select the wet chem CSV",
                               multi = FALSE)
-  raw_path <- tk_choose.files(default=paste(outwd,"/1_raw_opus/NEWEST_OPUS_FILES", sep=""), caption="Please select the mIR data CSV")
+  raw_path <- tk_choose.files(default=paste(outwd,"/1_raw_opus/", sep=""), caption="Please select the mIR data CSV")
   
   #set method, either PLSM or RF
   method=c("PLSM","SVM","XGBM")
   
-  # Begin by sourcing the scripts
-  source('PLS.R')
-  source('RF_PLS_optimal.R')
-  source('SVM.R')
-  source("XGBM.R")
+  #source helper file
   source("misc.R")
   
   raw <- NULL
@@ -104,41 +100,55 @@ predict_properties <- function(numberOfRuns){
   # outl <- sign2(raw[, -1]) #Based on the robustly sphered and normed data, robust principal components are computed
   # raw <- raw[outl$wfinal01==1, ]
   
-  # ref <- subset(ref, select = -c(X.EC..Salts.,Phosphorus,Potassium,Manganese,Copper,
-  #                                Aluminium,X.Sodium,Iron,X.C.E.C,X.Exchangeable.Acidity,
-  #                                X.Phosphorus.Sorption.Index..PSI.,Sulphur,Boron,Zinc,
-  #                                X.Exchangeable.Aluminium))
+   # ref <- subset(ref, select = -c(X.EC..Salts.,Phosphorus,Potassium,Manganese,Copper,
+   #                                Aluminium,X.Sodium,Iron,X.C.E.C,X.Exchangeable.Acidity,
+   #                                X.Phosphorus.Sorption.Index..PSI.,Sulphur,Boron,Zinc,
+   #                                X.Exchangeable.Aluminium))
   print(names(ref))
-  
-  for( xm in method){
-    testing_old <- NULL
-    for(i in 1:numberOfRuns){
-      testing <- random.sample(ref = ref)
-      while(length(testing) == length(testing_old)){# let's do our best to avoid same testing sets 
+  print(" ")
+  if(IND){
+    print("modeling 3 individual ML algo")
+    # Begin by sourcing the scripts
+    source('PLS.R')
+    source('SVM.R')
+    source("XGBM.R")
+    
+    for( xm in method){
+      testing_old <- NULL
+      for(i in 1:numberOfRuns){
         testing <- random.sample(ref = ref)
+        while(length(testing) == length(testing_old)){# let's do our best to avoid same testing sets 
+          testing <- random.sample(ref = ref)
+        }
+        print(paste("split vector length is ", length(testing)))
+        print(paste("iteration", i, "of method", xm))
+        newwd <- paste(outwd,"4_predicted", sep="/")
+        dir.create(newwd, showWarnings = FALSE) 
+        newwd<- paste(newwd, xm ,sep="/")
+        dir.create(newwd, showWarnings = FALSE) 
+        newwd<- paste(newwd, i, sep="/")
+        dir.create(newwd, showWarnings = FALSE) 
+        
+        #make new folder
+        setwd(newwd) 
+        print(newwd)
+        try(PLS(newwd, raw, ref, testing, method=xm))
+        try(SVM(newwd, raw, ref, testing, method=xm))
+        try(XGBM(newwd, raw, ref, testing, method=xm))
+        testing_old <- testing
       }
-      print(paste("split vector length is ", length(testing)))
-      print(paste("iteration", i, "of method", xm))
-      newwd <- paste(outwd,"4_predicted", sep="/")
-      dir.create(newwd, showWarnings = FALSE) 
-      newwd<- paste(newwd, xm ,sep="/")
-      dir.create(newwd, showWarnings = FALSE) 
-      newwd<- paste(newwd, i, sep="/")
-      dir.create(newwd, showWarnings = FALSE) 
-      
-      #make new folder
-      setwd(newwd) 
-      print(newwd)
-      try(PLS(newwd, raw, ref, testing, method=xm))
-      try(SVM(newwd, raw, ref, testing, method=xm))
-      try(XGBM(newwd, raw, ref, testing, method=xm))
-      testing_old <- testing
-    }
-  }  
-  setwd(wd)
-  print("summarising runs")
-  source("3-Summarise_soil.R")
-  summarise_runs(numberOfRuns=numberOfRuns)
+    }  
+    setwd(wd)
+    print("summarising runs")
+    source("3-Summarise_soil.R")
+    summarise_runs(numberOfRuns=numberOfRuns)
+  }
+  if(ENS){
+    source("ensemble.R")
+    print("modeling an ensemble of 3 ML algo")
+    newwd <- paste(outwd,"4_predicted", sep="/")
+    try(ENS(newwd, raw, ref))
+  }
   time.taken <- proc.time() - start.time
   print(paste("time taken is ", round(time.taken[3]/60, 2), " minutes"))
 }

@@ -80,13 +80,6 @@ PLS <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","S
   	
   	# Fit calibration models for the training set and
   	# use the testing set to validate the models
-  #	testing <- which(ref.mir$SSN%in%hout$SSN)
-   #  newm <- 0.35
-   #  #set.seed(sample(1:1000,1))
-   # 	testing <- round(runif(round(length(ref.mir$SSN)*newm), min=0, max=length(ref.mir$SSN)))
-   #  testing <- unique(testing)
-   #  print(paste("data points in testing are ", length(testing)))
-
 	msummary <- NULL
 	hd <- colnames(ref)[-1]
 	print("training calibration models")
@@ -116,7 +109,7 @@ PLS <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","S
 		#set.seed(99)
 		pls.fit <- train(trainY ~., method = "kernelpls", data = cal,
 		              trControl =ctrl,tuneGrid = expand.grid(ncomp = 2:5),
-		              metric = "RMSE",preProc = c("center", "scale"))
+		              metric = "RMSE", preProc = c("center", "scale"))
 		# Get final model to compute coefficient for variation explained
 		predi <- exp(predict(pls.fit, pls.fit$trainingData))
 		y <- exp(cal[, 1])
@@ -141,7 +134,7 @@ PLS <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","S
 		model.summary <- c(hd[q], PCs, training.parameters, testing.parameters)
 		msummary <- rbind(msummary, model.summary)
 		
-		saveRDS(pls.fit, file = paste0(b,"/","Models/", hd[q], ".rds"))
+		#saveRDS(pls.fit, file = paste0(b,"/","Models/", hd[q], ".rds"))
 		
 		pm <- as.data.frame(cbind(y, predi))
 		colnames(pm) <- c("measured","predicted")
@@ -195,7 +188,7 @@ PLS <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","S
 
 		# Save calibration and validation plots
 		png(file = paste0(b,"/calibration_plots/", hd[q],".png"),
-		height = 400,width = 800)
+		height = 400, width = 800)
 		grid.arrange(p,p2,nrow = 1)
 		
 		dev.off()
@@ -254,7 +247,7 @@ PLS <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","S
       	                 trControl = ctrl, tuneGrid = expand.grid(ncomp = ncomp),
       	                 metric = "RMSE", preProc = c("center", "scale"))
       	
-      	saveRDS(pls.fit, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
+      	#saveRDS(pls.fit, file = paste0(b,"/","Full_Models/", hd[q], ".rds"))
       	
       	predi <- exp(predict(pls.fit, pls.fit$trainingData))
       	y <- exp(cal[, 1])
