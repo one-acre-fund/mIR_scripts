@@ -2,7 +2,7 @@
 
 #will run on different holdout samps to get a true estimate of accuracy with increasing samp size
 #start by setting WD to here
-summarise_runs <- function(numberOfRuns){
+gm_summarise_runs <- function(numberOfRuns){
   #set methods
   method = c("PLSM","SVM","XGBM")
   
@@ -13,7 +13,7 @@ summarise_runs <- function(numberOfRuns){
   #get soil props
   newwd <- paste(dirin, "PLSM", 1 , sep="/")
   setwd(newwd)
-  tin <- read.csv("Model_Summary.csv")
+  tin <- read.csv("CV_models_summary.csv")
   models <- data.frame("soil property" = tin[1])
   
   for(xm in method ){
@@ -21,7 +21,7 @@ summarise_runs <- function(numberOfRuns){
       newwd <- paste(dirin, xm ,sep="/")
       newwd <- paste(newwd, nm, sep="/")
       setwd(newwd)
-      te <- read.csv("Model_Summary.csv")
+      te <- read.csv("CV_models_summary.csv")
       p <- paste(xm, nm, sep = "_")
       df <- data.frame("run" = te$Holdout.Rsquared)
       colnames(df) <- p
@@ -39,6 +39,11 @@ summarise_runs <- function(numberOfRuns){
   
   models$meanXGBM <- round(rowMeans(models[grep("XGBM", names(models))]), 2)
   models$sdXGBM   <- round(apply(models[grep("XGBM", names(models))], 1, sd), 2)
+  
+  m <- models[, grep("mean|sd", names(models))]
+  m <- data.frame("Soil Property"=tin[1], m)
+  
+  write.csv(m, file = paste0(dirin, "/simple_models_averages.csv"), row.names = FALSE)
   
   #check if passes R2 and SD test
   models_sub1 <- subset(models, meanSVM  > 0.5 & sdSVM  < 0.1)
@@ -62,7 +67,7 @@ summarise_runs <- function(numberOfRuns){
   XGBM_vars <- models_sub[XGBM, ][1]
   
   PLSM_vars <- as.character(PLSM_vars[,1])
-  SVM_vars  <- as.character(SVM_vars[, 1])
+  SVM_vars  <- as.character(SVM_vars[,1])
   XGBM_vars <- as.character(XGBM_vars[,1])
   
   #read in prediction files to merge
@@ -102,7 +107,8 @@ summarise_runs <- function(numberOfRuns){
   
   #slim models best
   models_slim <- models_best
-  new_slim <- data.frame("Soil Property" = models_slim[1], "Best R2" =1, "Best SD" = 1)
+  try({
+  new_slim <- data.frame("Soil Property" = tin[1], "Best R2" =1, "Best SD" = 1)
   for(row in 1:dim(models_slim)[1] ){
     su <- models_slim[row,]
     a <- max(su$meanXGBM, su$meanPLSM, su$meanSVM)
@@ -119,7 +125,9 @@ summarise_runs <- function(numberOfRuns){
     }
     new_slim[row, 3] <- b 
   }
+  })
   
+try({
   models_ <- models #don't quite understand the logic behind the for-loop above & below. ICRAF is taking max Rsq from one model and min sd from a different model. Will change this later[Max]
   new_ <- data.frame("Soil Property" = models_[1], "Best R2" = 1, "Best SD" = 1) 
   for(row in 1:dim(models_)[1] ){
@@ -140,11 +148,11 @@ summarise_runs <- function(numberOfRuns){
   
   foo <- paste(dirin, "Summary_of_best_models.csv", sep="/")
   write.csv(new_slim, foo, row.names = FALSE)
-  
+})   
   SSNs <- SVM_in$SSN
   #SSNs
   print(paste("SAVED IN:", fo))
-  
+ 
   #D:\OneAcre\Google Drive\One Acre Fund\OAF Soil Lab Folder\Projects\my_feb_17\4_predicted
   dirin2 <- paste(dirin,"other_summaries", sep="/")
   dir.create(dirin2, showWarnings = FALSE) 

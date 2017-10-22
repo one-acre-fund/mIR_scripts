@@ -36,7 +36,8 @@ suppressMessages(library(doMC)) #Max Sop setup - comment out if you don't a mult
 registerDoMC(detectCores())         #Max Sop setup - this should automatically detetect the #cores in your machine and take advantage of it for faster computation
 
 ## RUN FROM HERE
-XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","SVM","XGBM")){
+XGBM <- function(wd, infrared.data, reference.data, testing, 
+                 raw_test, ref_test, method = c("PLSM","SVM","XGBM")){
   
   if(method=="XGBM"){
     
@@ -48,26 +49,41 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
     
     #Exclude metadata variables
     mir1 <- as.matrix(mir[, -1])
+    raw_test1 <- as.matrix(raw_test[, -1])
     mir1 <- savitzkyGolay(mir1, p = 3, w = 21, m = 0)
+    raw_test1 <- savitzkyGolay(raw_test1, p = 3, w = 21, m = 0)
     wave <- as.numeric(substr(colnames(mir1),2,19))
+    wave_test <- as.numeric(substr(colnames(raw_test1),2,19))
     colnames(mir1) <- wave
+    colnames(raw_test1) <- wave_test
     
     #mir pre-processing
     de1 <- trans(mir1, tr = "derivative", order = 1, gap = 23)
     der1 <- rev(as.data.frame(de1$trans))
-    #der1 <- Derivative(mir1) #this is a bit faster
     colnames(der1) <- paste0("m", wave)
+    
+    de2 <- trans(raw_test1, tr = "derivative", order = 1, gap = 23)
+    der2 <- rev(as.data.frame(de2$trans))
+    colnames(der2) <- paste0("m", wave_test)
+    
     der1 <- HaarTransform(der1, 3)
-    #der1 <- continuumRemoval(der1, type='R', method='substraction')
     nzv_cols <- nearZeroVar(der1)
     if(length(nzv_cols) > 0) der1 <- der1[, -nzv_cols]
     der1 <- der1[, colMeans(is.na(der1)) <= 0.5]
     colnames(der1) <- paste0("m", colnames(der1))
     
+    der2 <- HaarTransform(der2, 3)
+    nzv_cols <- nearZeroVar(der2)
+    if(length(nzv_cols) > 0) der2 <- der2[, -nzv_cols]
+    der2 <- der2[, colMeans(is.na(der2)) <= 0.5]
+    colnames(der2) <- paste0("m", colnames(der2))
+    
     #Save transformed spectra
     der1.ssn <- as.data.frame(cbind(as.vector(mir[, 1]), der1))
     colnames(der1.ssn) <- c("SSN", colnames(der1))
-    #write_csv(der1.ssn, "transformed_mir_data.csv")
+    
+    der2.ssn <- as.data.frame(cbind(as.vector(raw_test[, 1]), der2))
+    colnames(der2.ssn) <- c("SSN", colnames(der2))
     
     #merge with first derivative preprocessed spectra
     colnames(ref)[1] <- "SSN"
@@ -208,8 +224,11 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
       dir.create("Full_Models")}
     
     msummary <- NULL
+    msummary2 <- NULL
     hd <- colnames(ref[-1])#Exclude SSN 
     all.predicted <- NULL
+    all.predicted.test <- NULL
+    
     print("training full models")
     for(q in 1:length(hd)) {
       
@@ -229,6 +248,10 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
       p <- which(is.na(der1.ssn[, 1]) == TRUE)
       ifelse(length(p)>0,ssn<-der1.ssn[-p,1],ssn <- der1.ssn[,1])
       ifelse(length(p)>0,der1.ssn<-der1.ssn[-p,],der1.ssn<-der1.ssn)
+      
+      p <- which(is.na(der2.ssn[, 1]) == TRUE)
+      ifelse(length(p) > 0, ssn2 <- der2.ssn[-p, 1], ssn2 <- der2.ssn[,1])
+      ifelse(length(p) > 0, der2.ssn <- der2.ssn[-p,], der2.ssn <- der2.ssn)
       
       trainX <- as.matrix(trainX) #drop target var and convert to matrix
       dtrain <- xgb.DMatrix(data = trainX, label = trainY)
@@ -279,8 +302,14 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
       p1 <- p1 + xlim(range(pm)) + ylim(range(pm))
       ggsave(file = paste0(b,"/","Full_calibration_plots/", hd[q],".png"),
              height = 6, width = 6, units = "in", p1)
+      
       prediction.f <- round(predict(xgb.fit, as.matrix(der1.ssn[, -1])), 2)
       all.predicted <- cbind(all.predicted, prediction.f)
+      
+      prediction.test <- round(predict(xgb.fit, as.matrix(der2.ssn[, -1])), 2)
+      all.predicted.test <- cbind(all.predicted.test, prediction.test)
+      rsq.test <- c(hd[q] , round(postResample(prediction.test, ref_test[, hd[q]])[2], 3))
+      msummary2 <- rbind(msummary2, rsq.test)
     } ##end loop
     
     #Combine the predicted values together
@@ -288,13 +317,27 @@ XGBM <- function(wd, infrared.data, reference.data, testing, method = c("PLSM","
     colnames(all.predicted.SSN) <- c("SSN", hd)
     colnames(msummary) <- c("Soil properties","Rsquared")
     
+    all.predicted.test.SSN <- cbind(as.vector(ssn2), all.predicted.test)
+    colnames(all.predicted.test.SSN) <- c("SSN", hd)
+    colnames(msummary2) <- c("Soil properties","Holdout Rsquared")
+    
     #Save full model summaries
     write.table(msummary, file = "Full_models_summary.csv", sep = ",", 
                 row.names = FALSE)
-    
     #Save the linked file
     write.table(all.predicted.SSN, file = "All_predictions.csv",
                 sep = ",", row.names = FALSE)
+    
+    external_mir_dir <- "../../../External_MIR"
+    sub_dir <- substring(b, 106, 112)
+    #if(!file.exists(paste0(external_mir_dir, "/", sub_dir))){
+    dir.create(file.path(external_mir_dir, sub_dir), recursive = TRUE)
+    # } 
+    #print(b)
+    write.table(msummary2, file = paste0(external_mir_dir,"/", sub_dir, "/CV_models_summary.csv"), 
+                row.names = FALSE, sep = ",")
+    write.table(all.predicted.test.SSN, file = paste0(external_mir_dir,"/", sub_dir, "/All_predictions.csv"),
+                row.names = FALSE, sep = ",") 
     close(pb)
     gc()
   }

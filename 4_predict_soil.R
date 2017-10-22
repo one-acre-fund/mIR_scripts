@@ -8,15 +8,24 @@ predict_properties <- function(numberOfRuns, ENS=FALSE, IND=TRUE){
   #start by setting WD to here
   wd <- getwd()
   #outwd <- choose.dir(default="D:/OneAcre/Google Drive/One Acre Fund/OAF Soil Lab Folder/Projects",caption="please choose project directory")
-  outwd <- tk_choose.dir(default="/home/max/oaf/soil_lab/projects",caption="please choose project directory")
+  outwd <- tk_choose.dir(default="/home/max/oaf/Google Drive/data/OAF Soil Lab Folder/Projects/",
+                         caption="please choose project directory")
   
   
-  #ref_path <- paste(outwd,"3_wet_chem/wet_chem.csv",sep="/")
-  
-  ref_path <- tk_choose.files(default=paste(outwd,"/wet_chem/wet_chem.csv",sep="")
-                              , caption="Please select the wet chem CSV",
+  ref_path <- tk_choose.files(default="/home/max/oaf/Google Drive/data/OAF Soil Lab Folder/Projects/",
+                              caption="Please select the wet chem CSV",
                               multi = FALSE)
-  raw_path <- tk_choose.files(default=paste(outwd,"/1_raw_opus/", sep=""), caption="Please select the mIR data CSV")
+  
+  raw_path <- tk_choose.files(default="/home/max/oaf/Google Drive/data/OAF Soil Lab Folder/Projects/",
+                              caption="Please select the mIR data CSV", multi = FALSE)
+  
+  
+  ref.test_path <- tk_choose.files(default="/home/max/oaf/Google Drive/data/OAF Soil Lab Folder/Projects/",
+                              caption="Please select the wet chem test CSV",
+                              multi = FALSE)
+  
+  raw.test_path <- tk_choose.files(default="/home/max/oaf/Google Drive/data/OAF Soil Lab Folder/Projects/",
+                              caption="Please select the mIR test data CSV", multi = FALSE)
   
   #set method, either PLSM or RF
   method=c("PLSM","SVM","XGBM")
@@ -30,9 +39,11 @@ predict_properties <- function(numberOfRuns, ENS=FALSE, IND=TRUE){
   
   #mir
   raw <- read.csv (raw_path)
+  raw_test <- read.csv (raw.test_path)
   
   #wetchem
   ref <- read.csv (ref_path)
+  ref_test <- read.csv (ref.test_path)
   
   #remove NA only rows
   ref <- ref[rowSums(is.na(ref)) < (dim(ref)[2]-6), ]
@@ -122,7 +133,7 @@ predict_properties <- function(numberOfRuns, ENS=FALSE, IND=TRUE){
         }
         print(paste("split vector length is ", length(testing)))
         print(paste("iteration", i, "of method", xm))
-        newwd <- paste(outwd,"4_predicted", sep="/")
+        newwd <- paste(outwd,"4_predicted_KE_RW", sep="/")
         dir.create(newwd, showWarnings = FALSE) 
         newwd<- paste(newwd, xm ,sep="/")
         dir.create(newwd, showWarnings = FALSE) 
@@ -132,16 +143,18 @@ predict_properties <- function(numberOfRuns, ENS=FALSE, IND=TRUE){
         #make new folder
         setwd(newwd) 
         print(newwd)
-        try(PLS(newwd, raw, ref, testing, method=xm))
-        try(SVM(newwd, raw, ref, testing, method=xm))
-        try(XGBM(newwd, raw, ref, testing, method=xm))
+        try(PLS(newwd, raw, ref, testing, raw_test=raw_test, ref_test=ref_test, method=xm))
+        try(SVM(newwd, raw, ref, testing, raw_test=raw_test, ref_test=ref_test, method=xm))
+        try(XGBM(newwd, raw, ref, testing,raw_test=raw_test, ref_test=ref_test, method=xm))
         testing_old <- testing
       }
-    }  
+    } 
     setwd(wd)
     print("summarising runs")
     source("3-Summarise_soil.R")
+    source("global_summary.R")
     summarise_runs(numberOfRuns=numberOfRuns)
+    gm_summarise_runs(numberOfRuns=numberOfRuns)
   }
   if(ENS){
     source("ensemble.R")
