@@ -14,8 +14,8 @@ print(paste("Directory chosen", pth))
 lst <- as.list(list.files(path=pth, pattern="*.0$", full.names=TRUE))
 shortlst <- as.list(list.files(path=pth, pattern="*.0$", full.names=FALSE))
 
-lst[334]      <- NULL
-shortlst[334] <- NULL
+# lst[334]      <- NULL
+# shortlst[334] <- NULL
 
 #lifted from R. On code ###############################
 spec <- read.opus(lst, speclib = "ICRAF")@data@ab
